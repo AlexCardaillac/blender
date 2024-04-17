@@ -509,6 +509,7 @@ static void node_shader_set_butfunc(bNodeType *ntype)
       ntype->draw_buttons = node_shader_buts_displacement;
       break;
     case SH_NODE_BSDF_GLASS:
+    case SH_NODE_VOLUME_SCATTER:
     case SH_NODE_BSDF_REFRACTION:
       ntype->draw_buttons = node_shader_buts_glossy;
       break;
