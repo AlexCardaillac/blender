@@ -1038,6 +1038,9 @@ typedef struct ShaderVolumeClosure {
   Spectrum weight;
   float sample_weight;
   float g;
+  float IoR;
+  float B;
+  int16_t phase;
 } ShaderVolumeClosure;
 
 typedef struct ShaderVolumePhases {

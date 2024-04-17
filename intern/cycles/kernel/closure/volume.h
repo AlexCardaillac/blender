@@ -25,6 +25,9 @@ typedef struct HenyeyGreensteinVolume {
   SHADER_CLOSURE_BASE;
 
   float g;
+  float IoR;
+  float B;
+  int16_t phase;
 } HenyeyGreensteinVolume;
 
 static_assert(sizeof(ShaderClosure) >= sizeof(HenyeyGreensteinVolume),

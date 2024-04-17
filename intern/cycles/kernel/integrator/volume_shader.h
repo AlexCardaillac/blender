@@ -82,6 +82,9 @@ ccl_device_inline void volume_shader_copy_phases(ccl_private ShaderVolumePhases 
       to_sc->weight = from_sc->weight;
       to_sc->sample_weight = from_sc->sample_weight;
       to_sc->g = from_hg->g;
+      to_sc->phase = from_hg->phase;
+      to_sc->IoR = from_hg->IoR;
+      to_sc->B = from_hg->B;
       phases->num_closure++;
       if (phases->num_closure >= MAX_VOLUME_CLOSURE) {
         break;

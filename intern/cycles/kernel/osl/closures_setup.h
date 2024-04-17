@@ -1021,6 +1021,9 @@ ccl_device void osl_closure_henyey_greenstein_setup(
   }
 
   volume->g = closure->g;
+  volume->phase = closure->phase;
+  volume->IoR = closure->IoR;
+  volume->B = closure->B;
 
   sd->flag |= volume_henyey_greenstein_setup(volume);
 }
