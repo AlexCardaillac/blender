@@ -4,6 +4,14 @@
 
 #pragma once
 
+#include "util/array.h"
+
+/* Scattering phase functions */
+typedef enum PhaseFunction {
+  PHASE_HENYEY_GREENSTEIN = 0,
+  PHASE_FOURNIER_FORAND = 1,
+} PhaseFunction;
+
 CCL_NAMESPACE_BEGIN
 
 /* VOLUME EXTINCTION */
@@ -33,6 +41,8 @@ typedef struct HenyeyGreensteinVolume {
 static_assert(sizeof(ShaderClosure) >= sizeof(HenyeyGreensteinVolume),
               "HenyeyGreensteinVolume is too large!");
 
+#define ANGLE_EPSILON 1e-6f
+
 /* Given cosine between rays, return probability density that a photon bounces
  * to that direction. The g parameter controls how different it is from the
  * uniform sphere. g=0 uniform diffuse-like, g=1 close to sharp single ray. */
@@ -42,12 +52,80 @@ ccl_device float single_peaked_henyey_greenstein(float cos_theta, float g)
          (M_1_PI_F * 0.25f);
 };
 
+ccl_device float ff_sigma(float n, float theta)
+{
+  float u = 4.0f * powf(sinf(theta / 2.0f), 2.0f);
+  return u / (3.0f * powf(n - 1.0f, 2.0f));
+};
+
+/* Given cosine between rays, return probability density that a photon bounces
+ * to that direction. The n parameter is the particle index of refraction and
+ * controls how much of the light is refracted. B is the particle backscatter
+ * fraction, B = b_b / b. */
+ccl_device float single_peaked_fournier_forand(float cos_theta, float n, float B)
+{
+  float theta = acosf(cos_theta);
+  if (theta < ANGLE_EPSILON)
+  {
+    theta = ANGLE_EPSILON;
+  }
+  float s90 = ff_sigma(n, M_PI_2_F);
+  float s180 = ff_sigma(n, M_PI_F);
+  float s_theta = ff_sigma(n, theta);
+  float slope = 2.0f * (logf(2.0f * B * (s90 - 1.0f) + 1.0f) /
+                logf(s90)) + 3.0f;
+  float v = (3.0f - slope) / 2.0f;
+  float pow_stheta_v = powf(s_theta, v);
+  float pow_s180_v = powf(s180, v);
+  float pf = 1.0f / (4.0f * M_PI_F * powf(1.0f - s_theta, 2.0f) * pow_stheta_v);
+  pf *= (v * (1.0f - s_theta) - (1.0f - pow_stheta_v) + (s_theta * (1.0f -
+        pow_stheta_v) - v * (1.0f - s_theta)) * powf(sinf(theta / 2.0f),-2.0f));
+  pf += ((1.0f - pow_s180_v) / (16.0f * M_PI_F * (s180 - 1.0f) * pow_s180_v)) *
+        (3.0f * powf(cosf(theta), 2.0f) - 1.0f);
+  return pf;
+};
+
+
+#define CDF_RESOLUTION 1800
+
+typedef float CDFTable[CDF_RESOLUTION][2];
+
+ccl_device CDFTable &get_fournier_forand_cdf_table()
+{
+  static CDFTable ff_cdf = {0.0};
+  return ff_cdf;
+}
+
+ccl_device void create_fournier_forand_cdf_table(ccl_private HenyeyGreensteinVolume *volume)
+{
+  static float IoR = -1.0f;
+  static float B = -1.0f;
+
+  if (volume->B == B && volume->IoR == IoR)
+  {
+    return;
+  }
+  B = volume->B;
+  IoR = volume->IoR;
+  CDFTable &ff_cdf = get_fournier_forand_cdf_table();
+  ff_cdf[0][0] = 0.0;
+  ff_cdf[0][1] = 1.0;
+}
+
 ccl_device int volume_henyey_greenstein_setup(ccl_private HenyeyGreensteinVolume *volume)
 {
   volume->type = CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID;
 
-  /* clamp anisotropy to avoid delta function */
-  volume->g = signf(volume->g) * min(fabsf(volume->g), 1.0f - 1e-3f);
+  if (volume->phase == PHASE_FOURNIER_FORAND) {
+    // printf("--------------\nPHASE_FOURNIER_FORAND\n--------------\n");
+      // *pdf = single_peaked_fournier_forand(cos_theta, svc->IoR, svc->B);
+  }
+  else {
+    // printf("--------------\nPHASE_HENYEY_GREENSTEIN\n--------------\n");
+
+    /* clamp anisotropy to avoid delta function */
+    volume->g = signf(volume->g) * min(fabsf(volume->g), 1.0f - 1e-3f);
+  }
 
   return SD_SCATTER;
 }
@@ -65,7 +143,12 @@ ccl_device Spectrum volume_henyey_greenstein_eval_phase(ccl_private const Shader
   }
   else {
     float cos_theta = dot(-wi, wo);
-    *pdf = single_peaked_henyey_greenstein(cos_theta, g);
+    if (svc->phase == PHASE_FOURNIER_FORAND) {
+      *pdf = single_peaked_fournier_forand(cos_theta, svc->IoR, svc->B);
+    }
+    else {
+      *pdf = single_peaked_henyey_greenstein(cos_theta, g);
+    }
   }
 
   return make_spectrum(*pdf);
@@ -87,7 +170,12 @@ ccl_device float3 henyey_greenstrein_sample(float3 D, float g, float2 rand, ccl_
     float k = (1.0f - g * g) / (1.0f - g + 2.0f * g * rand.x);
     cos_theta = (1.0f + g * g - k * k) / (2.0f * g);
     if (pdf) {
-      *pdf = single_peaked_henyey_greenstein(cos_theta, g);
+      // if (svc->phase == PHASE_FOURNIER_FORAND) {
+      // *pdf = single_peaked_fournier_forand(cos_theta, svc->IoR, svc->B);
+      // }
+      // else {
+        *pdf = single_peaked_henyey_greenstein(cos_theta, g);
+      // }
     }
   }
 

@@ -26,11 +26,11 @@ static void node_declare(NodeDeclarationBuilder &b)
       .subtype(PROP_FACTOR);
   b.add_input<decl::Float>("IoR")
       .default_value(1.0f)
-      .min(0.0f)
+      .min(1.0f)
       .max(2.0f)
       .subtype(PROP_FACTOR);
   b.add_input<decl::Float>("B")
-      .default_value(0.0f)
+      .default_value(1.0f)
       .min(0.0f)
       .max(1.0f)
       .subtype(PROP_FACTOR);
