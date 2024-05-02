@@ -3183,6 +3183,14 @@ NODE_DEFINE(ScatterVolumeNode)
   SOCKET_IN_COLOR(color, "Color", make_float3(0.8f, 0.8f, 0.8f));
   SOCKET_IN_FLOAT(density, "Density", 1.0f);
   SOCKET_IN_FLOAT(anisotropy, "Anisotropy", 0.0f);
+  SOCKET_IN_FLOAT(IoR, "IoR", 1.0f);
+  SOCKET_IN_FLOAT(B, "B", 1.0f);
+
+  static NodeEnum phase_enum;
+  phase_enum.insert("heyney_greenstein", CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
+  phase_enum.insert("fournier_forand", CLOSURE_VOLUME_FOURNIER_FORAND_ID);
+  SOCKET_ENUM(distribution, "Distribution", phase_enum, CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
+
   SOCKET_IN_FLOAT(volume_mix_weight, "VolumeMixWeight", 0.0f, SocketType::SVM_INTERNAL);
 
   SOCKET_OUT_CLOSURE(volume, "Volume");
@@ -3197,7 +3205,34 @@ ScatterVolumeNode::ScatterVolumeNode() : VolumeNode(get_node_type())
 
 void ScatterVolumeNode::compile(SVMCompiler &compiler)
 {
-  VolumeNode::compile(compiler, input("Density"), input("Anisotropy"));
+  ShaderInput *color_in = input("Color");
+
+  if (color_in->link) {
+    compiler.add_node(NODE_CLOSURE_WEIGHT, compiler.stack_assign(color_in));
+  }
+  else {
+    compiler.add_node(NODE_CLOSURE_SET_WEIGHT, color);
+  }
+
+  ShaderInput *density_in = input("Density");
+  ShaderInput *anisotropy_in = input("Anisotropy");
+  ShaderInput *ior_in = input("IoR");
+  ShaderInput *b_in = input("B");
+
+  compiler.add_node(
+      NODE_CLOSURE_VOLUME,
+      compiler.encode_uchar4(closure,
+                             compiler.stack_assign(density_in),
+                             compiler.stack_assign(anisotropy_in),
+                             compiler.closure_mix_weight_offset()),
+      __float_as_int((density_in) ? get_float(density_in->socket_type) : 0.0f),
+      __float_as_int((anisotropy_in) ? get_float(anisotropy_in->socket_type) : 0.0f));
+  compiler.add_node(compiler.stack_assign(ior_in),
+                    compiler.stack_assign(b_in),
+                    __float_as_int(IoR),
+                    __float_as_int(B));
+  // compiler.add_node(1, __float_as_int(get_float(b_in->socket_type)), __float_as_int(get_float(density_in->socket_type)), 4);
+                    // distribution
 }
 
 void ScatterVolumeNode::compile(OSLCompiler &compiler)
