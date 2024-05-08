@@ -1014,8 +1014,8 @@ ccl_device void osl_closure_henyey_greenstein_setup(
 {
   volume_extinction_setup(sd, rgb_to_spectrum(weight));
 
-  ccl_private HenyeyGreensteinVolume *volume = (ccl_private HenyeyGreensteinVolume *)bsdf_alloc(
-      sd, sizeof(HenyeyGreensteinVolume), rgb_to_spectrum(weight));
+  ccl_private ScatteringVolume *volume = (ccl_private ScatteringVolume *)bsdf_alloc(
+      sd, sizeof(ScatteringVolume), rgb_to_spectrum(weight));
   if (!volume) {
     return;
   }
@@ -1025,7 +1025,7 @@ ccl_device void osl_closure_henyey_greenstein_setup(
   volume->IoR = closure->IoR;
   volume->B = closure->B;
 
-  sd->flag |= volume_henyey_greenstein_setup(volume);
+  sd->flag |= volume_phase_setup(volume);
 }
 
 CCL_NAMESPACE_END

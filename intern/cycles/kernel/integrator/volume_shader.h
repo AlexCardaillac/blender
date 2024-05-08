@@ -40,10 +40,8 @@ ccl_device_inline void volume_shader_merge_closures(ccl_private ShaderData *sd)
         continue;
       }
 
-      ccl_private const HenyeyGreensteinVolume *hgi = (ccl_private const HenyeyGreensteinVolume *)
-          sci;
-      ccl_private const HenyeyGreensteinVolume *hgj = (ccl_private const HenyeyGreensteinVolume *)
-          scj;
+      ccl_private const ScatteringVolume *hgi = (ccl_private const ScatteringVolume *)sci;
+      ccl_private const ScatteringVolume *hgj = (ccl_private const ScatteringVolume *)scj;
       if (!(hgi->g == hgj->g)) {
         continue;
       }
@@ -73,8 +71,7 @@ ccl_device_inline void volume_shader_copy_phases(ccl_private ShaderVolumePhases 
 
   for (int i = 0; i < sd->num_closure; i++) {
     ccl_private const ShaderClosure *from_sc = &sd->closure[i];
-    ccl_private const HenyeyGreensteinVolume *from_hg =
-        (ccl_private const HenyeyGreensteinVolume *)from_sc;
+    ccl_private const ScatteringVolume *from_hg = (ccl_private const ScatteringVolume *)from_sc;
 
     if (from_sc->type == CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID) {
       ccl_private ShaderVolumeClosure *to_sc = &phases->closure[phases->num_closure];
