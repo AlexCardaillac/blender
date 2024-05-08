@@ -872,16 +872,17 @@ ccl_device
 }
 
 template<ShaderType shader_type>
-ccl_device_noinline void svm_node_closure_volume(KernelGlobals kg,
-                                                 ccl_private ShaderData *sd,
-                                                 ccl_private float *stack,
-                                                 Spectrum closure_weight,
-                                                 uint4 node)
+ccl_device_noinline int svm_node_closure_volume(KernelGlobals kg,
+                                                ccl_private ShaderData *sd,
+                                                ccl_private float *stack,
+                                                Spectrum closure_weight,
+                                                uint4 node,
+                                                int offset)
 {
 #ifdef __VOLUME__
   /* Only sum extinction for volumes, variable is shared with surface transparency. */
   if (shader_type != SHADER_TYPE_VOLUME) {
-    return;
+    return offset;
   }
 
   uint type, density_offset, anisotropy_offset;
@@ -890,9 +891,8 @@ ccl_device_noinline void svm_node_closure_volume(KernelGlobals kg,
   svm_unpack_node_uchar4(node.y, &type, &density_offset, &anisotropy_offset, &mix_weight_offset);
   float mix_weight = (stack_valid(mix_weight_offset) ? stack_load_float(stack, mix_weight_offset) :
                                                        1.0f);
-
   if (mix_weight == 0.0f) {
-    return;
+    return offset;
   }
 
   float density = (stack_valid(density_offset)) ? stack_load_float(stack, density_offset) :
@@ -910,21 +910,31 @@ ccl_device_noinline void svm_node_closure_volume(KernelGlobals kg,
 
   /* Add closure for volume scattering. */
   if (type == CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID) {
-    ccl_private HenyeyGreensteinVolume *volume = (ccl_private HenyeyGreensteinVolume *)bsdf_alloc(
-        sd, sizeof(HenyeyGreensteinVolume), weight);
+    uint4 ff_node = read_node(kg, &offset);
+
+    ccl_private ScatteringVolume *volume = (ccl_private ScatteringVolume *)bsdf_alloc(
+        sd, sizeof(ScatteringVolume), weight);
 
     if (volume) {
       float anisotropy = (stack_valid(anisotropy_offset)) ?
                              stack_load_float(stack, anisotropy_offset) :
                              __uint_as_float(node.w);
+      uint phase = ff_node.x;
+      float IoR = __uint_as_float(ff_node.y);
+      float B = __uint_as_float(ff_node.z);
+
       volume->g = anisotropy; /* g */
-      sd->flag |= volume_henyey_greenstein_setup(volume);
+      volume->IoR = IoR;      /* IoR */
+      volume->B = B;          /* B */
+      volume->phase = phase;  /* phase */
+      sd->flag |= volume_phase_setup(volume);
     }
   }
 
   /* Sum total extinction weight. */
   volume_extinction_setup(sd, weight);
 #endif
+  return offset;
 }
 
 template<ShaderType shader_type>
@@ -980,14 +990,14 @@ ccl_device_noinline int svm_node_principled_volume(KernelGlobals kg,
     }
 
     /* Add closure for volume scattering. */
-    ccl_private HenyeyGreensteinVolume *volume = (ccl_private HenyeyGreensteinVolume *)bsdf_alloc(
-        sd, sizeof(HenyeyGreensteinVolume), color * density);
+    ccl_private ScatteringVolume *volume = (ccl_private ScatteringVolume *)bsdf_alloc(
+        sd, sizeof(ScatteringVolume), color * density);
     if (volume) {
       float anisotropy = (stack_valid(anisotropy_offset)) ?
                              stack_load_float(stack, anisotropy_offset) :
                              __uint_as_float(value_node.y);
       volume->g = anisotropy;
-      sd->flag |= volume_henyey_greenstein_setup(volume);
+      sd->flag |= volume_phase_setup(volume);
     }
 
     /* Add extinction weight. */

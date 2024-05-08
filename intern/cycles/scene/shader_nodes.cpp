@@ -29,6 +29,8 @@
 #include "kernel/svm/math_util.h"
 #include "kernel/svm/ramp_util.h"
 
+#include "kernel/closure/volume_util.h"
+
 CCL_NAMESPACE_BEGIN
 
 /* Texture Mapping */
@@ -3187,9 +3189,9 @@ NODE_DEFINE(ScatterVolumeNode)
   SOCKET_IN_FLOAT(B, "B", 1.0f);
 
   static NodeEnum phase_enum;
-  phase_enum.insert("heyney_greenstein", CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
-  phase_enum.insert("fournier_forand", CLOSURE_VOLUME_FOURNIER_FORAND_ID);
-  SOCKET_ENUM(distribution, "Distribution", phase_enum, CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
+  phase_enum.insert("Henyey-Greenstein", CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
+  phase_enum.insert("Fournier-Forand", CLOSURE_VOLUME_FOURNIER_FORAND_ID);
+  SOCKET_ENUM(phase, "Phase", phase_enum, CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
 
   SOCKET_IN_FLOAT(volume_mix_weight, "VolumeMixWeight", 0.0f, SocketType::SVM_INTERNAL);
 
@@ -3227,12 +3229,14 @@ void ScatterVolumeNode::compile(SVMCompiler &compiler)
                              compiler.closure_mix_weight_offset()),
       __float_as_int((density_in) ? get_float(density_in->socket_type) : 0.0f),
       __float_as_int((anisotropy_in) ? get_float(anisotropy_in->socket_type) : 0.0f));
-  compiler.add_node(compiler.stack_assign(ior_in),
-                    compiler.stack_assign(b_in),
-                    __float_as_int(IoR),
-                    __float_as_int(B));
-  // compiler.add_node(1, __float_as_int(get_float(b_in->socket_type)), __float_as_int(get_float(density_in->socket_type)), 4);
-                    // distribution
+  compiler.add_node(phase,
+                    __float_as_int(get_float(ior_in->socket_type)),
+                    __float_as_int(get_float(b_in->socket_type)));
+
+  if (phase == CLOSURE_VOLUME_FOURNIER_FORAND_ID) {
+    uint count = create_fournier_forand_cdf_table(get_float(ior_in->socket_type),
+                                                  get_float(b_in->socket_type));
+  }
 }
 
 void ScatterVolumeNode::compile(OSLCompiler &compiler)

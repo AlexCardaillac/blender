@@ -411,7 +411,8 @@ ccl_device void svm_eval_nodes(KernelGlobals kg,
       SVM_CASE(NODE_CLOSURE_VOLUME)
       IF_KERNEL_NODES_FEATURE(VOLUME)
       {
-        svm_node_closure_volume<type>(kg, sd, stack, closure_weight, node);
+        offset = svm_node_closure_volume<type>(
+            kg, sd, stack, closure_weight, node, offset);
       }
       break;
       SVM_CASE(NODE_PRINCIPLED_VOLUME)

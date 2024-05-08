@@ -777,7 +777,7 @@ class ScatterVolumeNode : public VolumeNode {
   NODE_SOCKET_API(float, anisotropy)
   NODE_SOCKET_API(float, IoR)
   NODE_SOCKET_API(float, B)
-  NODE_SOCKET_API(ClosureType, distribution)
+  NODE_SOCKET_API(ClosureType, phase)
 };
 
 class PrincipledVolumeNode : public VolumeNode {
