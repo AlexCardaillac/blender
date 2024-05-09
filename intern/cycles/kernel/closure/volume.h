@@ -41,9 +41,8 @@ static_assert(sizeof(ShaderClosure) >= sizeof(ScatteringVolume), "ScatteringVolu
  * to that direction. The n parameter is the particle index of refraction and
  * controls how much of the light is refracted. B is the particle backscatter
  * fraction, B = b_b / b. */
-ccl_device float single_peaked_fournier_forand(float cos_theta, float n, float B)
+ccl_device float single_peaked_fournier_forand(float theta, float n, float B)
 {
-  float theta = acosf(cos_theta);
   if (theta < ANGLE_EPSILON) {
     theta = ANGLE_EPSILON;
   }
@@ -63,10 +62,23 @@ ccl_device float single_peaked_fournier_forand(float cos_theta, float n, float B
   return pf;
 };
 
-// TO DO
-ccl_device float3 fournier_forand_sample(float3 D, float g, float2 rand, ccl_private float *pdf)
+ccl_device float3
+fournier_forand_sample(float3 D, float b, float IoR, float2 rand, ccl_private float *pdf)
 {
-  return make_float3(0.0f, 0.0f, 0.0f);
+  float theta = find_fournier_forand_angle(rand.x);
+  if (pdf) {
+    *pdf = single_peaked_fournier_forand(theta, IoR, b);
+  }
+
+  float sin_theta = sinf(theta);
+  float phi = M_2PI_F * rand.y;
+  float3 dir = make_float3(sin_theta * cosf(phi), sin_theta * sinf(phi), cosf(theta));
+
+  float3 T, B;
+  make_orthonormals(D, &T, &B);
+  dir = dir.x * T + dir.y * B + dir.z * D;
+
+  return dir;
 }
 
 /* HENYEY-GREENSTEIN PHASE */
@@ -123,7 +135,7 @@ ccl_device Spectrum volume_phase_eval(ccl_private const ShaderData *sd,
 
   switch (svc->phase) {
     case CLOSURE_VOLUME_FOURNIER_FORAND_ID:
-      cos_theta = dot(-sd->wi, wo);
+      cos_theta = acosf(dot(-sd->wi, wo));
       *pdf = single_peaked_fournier_forand(cos_theta, svc->IoR, svc->B);
       break;
     default:  // CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID
@@ -151,7 +163,7 @@ ccl_device int volume_phase_sample(ccl_private const ShaderData *sd,
   /* note that wi points towards the viewer and so is used negated */
   switch (svc->phase) {
     case CLOSURE_VOLUME_FOURNIER_FORAND_ID:
-      *wo = fournier_forand_sample(-sd->wi, svc->g, rand, pdf);
+      *wo = fournier_forand_sample(-sd->wi, svc->B, svc->IoR, rand, pdf);
       break;
     default:  // CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID
       *wo = henyey_greenstein_sample(-sd->wi, svc->g, rand, pdf);

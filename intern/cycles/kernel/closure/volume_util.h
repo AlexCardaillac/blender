@@ -94,4 +94,29 @@ ccl_device uint create_fournier_forand_cdf_table(float n, float b)
   return i;
 }
 
+ccl_device float interpolate_linear(float ax, float ay, float bx, float by, float x)
+{
+  return ay + (by - ay) * ((x - ax) / (bx - ax));
+}
+
+ccl_device float find_fournier_forand_angle(float rand)
+{
+  CDFTable &ff_cdf = get_fournier_forand_cdf_table();
+  uint i = 0;
+  while (i < CDF_RESOLUTION and ff_cdf[i][1] <= rand) {
+    i += 1;
+  }
+  if (i == CDF_RESOLUTION) {
+    return ff_cdf[CDF_RESOLUTION - 1][0];
+  }
+  else if (rand == ff_cdf[i][1]) {
+    return ff_cdf[i][0];
+  }
+  else if (rand < ff_cdf[i][1]) {
+    return interpolate_linear(
+        ff_cdf[i][1], ff_cdf[i][0], ff_cdf[i + 1][1], ff_cdf[i + 1][0], rand);
+  }
+  return 0.0;
+}
+
 CCL_NAMESPACE_END
