@@ -24,8 +24,8 @@ static void node_declare(NodeDeclarationBuilder &b)
       .min(-1.0f)
       .max(1.0f)
       .subtype(PROP_FACTOR);
-  b.add_input<decl::Float>("IoR").default_value(1.0f).min(1.0f).max(2.0f).subtype(PROP_FACTOR);
-  b.add_input<decl::Float>("B").default_value(1.0f).min(0.0f).max(1.0f).subtype(PROP_FACTOR);
+  b.add_input<decl::Float>("IoR").default_value(1.33f).min(1.0f).max(2.0f).subtype(PROP_FACTOR);
+  b.add_input<decl::Float>("B").default_value(0.1f).min(0.0f).max(0.5f).subtype(PROP_FACTOR);
   b.add_input<decl::Float>("Weight").unavailable();
   b.add_output<decl::Shader>("Volume").translation_context(BLT_I18NCONTEXT_ID_ID);
 }

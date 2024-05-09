@@ -3185,8 +3185,8 @@ NODE_DEFINE(ScatterVolumeNode)
   SOCKET_IN_COLOR(color, "Color", make_float3(0.8f, 0.8f, 0.8f));
   SOCKET_IN_FLOAT(density, "Density", 1.0f);
   SOCKET_IN_FLOAT(anisotropy, "Anisotropy", 0.0f);
-  SOCKET_IN_FLOAT(IoR, "IoR", 1.0f);
-  SOCKET_IN_FLOAT(B, "B", 1.0f);
+  SOCKET_IN_FLOAT(IoR, "IoR", 1.33f);
+  SOCKET_IN_FLOAT(B, "B", 0.1f);
 
   static NodeEnum phase_enum;
   phase_enum.insert("Henyey-Greenstein", CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
@@ -3234,8 +3234,7 @@ void ScatterVolumeNode::compile(SVMCompiler &compiler)
                     __float_as_int(get_float(b_in->socket_type)));
 
   if (phase == CLOSURE_VOLUME_FOURNIER_FORAND_ID) {
-    uint count = create_fournier_forand_cdf_table(get_float(ior_in->socket_type),
-                                                  get_float(b_in->socket_type));
+    create_fournier_forand_cdf_table(get_float(ior_in->socket_type), get_float(b_in->socket_type));
   }
 }
 
