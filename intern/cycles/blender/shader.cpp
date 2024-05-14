@@ -713,7 +713,17 @@ static ShaderNode *add_node(Scene *scene,
     node = scatter;
   }
   else if (b_node.is_a(&RNA_ShaderNodeVolumeAbsorption)) {
-    node = graph->create_node<AbsorptionVolumeNode>();
+    BL::ShaderNodeVolumeAbsorption b_absorption_node(b_node);
+    AbsorptionVolumeNode *absorption = graph->create_node<AbsorptionVolumeNode>();
+    switch (b_absorption_node.density_mode()) {
+      case BL::ShaderNodeVolumeAbsorption::density_mode_DENSITY_GLOBAL:
+        absorption->set_density_mode(NODE_VOLUME_DENSITY_GLOBAL);
+        break;
+      case BL::ShaderNodeVolumeAbsorption::density_mode_DENSITY_CHANNEL:
+        absorption->set_density_mode(NODE_VOLUME_DENSITY_CHANNEL);
+        break;
+    }
+    node = absorption;
   }
   else if (b_node.is_a(&RNA_ShaderNodeVolumePrincipled)) {
     PrincipledVolumeNode *principled = graph->create_node<PrincipledVolumeNode>();

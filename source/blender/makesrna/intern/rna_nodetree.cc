@@ -5618,6 +5618,17 @@ static void def_refraction(StructRNA *srna)
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
 }
 
+static void def_absorption(StructRNA *srna)
+{
+  PropertyRNA *prop;
+
+  prop = RNA_def_property(srna, "density_mode", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, nullptr, "custom1");
+  RNA_def_property_enum_items(prop, node_volume_density_items);
+  RNA_def_property_ui_text(prop, "Density Mode", "Density mode for the light attenuation");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+}
+
 static void def_scatter(StructRNA *srna)
 {
   PropertyRNA *prop;

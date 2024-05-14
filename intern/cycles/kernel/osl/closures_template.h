@@ -200,6 +200,7 @@ OSL_CLOSURE_STRUCT_BEGIN(HuangHair, hair_huang)
 OSL_CLOSURE_STRUCT_END(HuangHair, hair_huang)
 
 OSL_CLOSURE_STRUCT_BEGIN(VolumeAbsorption, absorption)
+  OSL_CLOSURE_STRUCT_MEMBER(VolumeAbsorption, INT, int, density_mode, NULL)
 OSL_CLOSURE_STRUCT_END(VolumeAbsorption, absorption)
 
 OSL_CLOSURE_STRUCT_BEGIN(VolumeHenyeyGreenstein, henyey_greenstein)

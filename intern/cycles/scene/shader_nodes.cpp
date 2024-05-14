@@ -3118,12 +3118,15 @@ VolumeNode::VolumeNode(const NodeType *node_type) : ShaderNode(node_type)
 void VolumeNode::compile(SVMCompiler &compiler, ShaderInput *param1, ShaderInput *param2)
 {
   ShaderInput *color_in = input("Color");
+  ShaderInput *densities_in = input("Densities");
+  ShaderInput *coeffs_in = density_mode == NODE_VOLUME_DENSITY_GLOBAL ? color_in : densities_in;
 
-  if (color_in->link) {
-    compiler.add_node(NODE_CLOSURE_WEIGHT, compiler.stack_assign(color_in));
+  if (coeffs_in->link) {
+    compiler.add_node(NODE_CLOSURE_WEIGHT, compiler.stack_assign(coeffs_in));
   }
   else {
-    compiler.add_node(NODE_CLOSURE_SET_WEIGHT, color);
+    compiler.add_node(NODE_CLOSURE_SET_WEIGHT,
+                      density_mode == NODE_VOLUME_DENSITY_GLOBAL ? color : densities);
   }
 
   compiler.add_node(
@@ -3153,8 +3156,14 @@ NODE_DEFINE(AbsorptionVolumeNode)
   NodeType *type = NodeType::add("absorption_volume", create, NodeType::SHADER);
 
   SOCKET_IN_COLOR(color, "Color", make_float3(0.8f, 0.8f, 0.8f));
+  SOCKET_IN_COLOR(densities, "Densities", make_float3(1.0f, 1.0f, 1.0f));
   SOCKET_IN_FLOAT(density, "Density", 1.0f);
   SOCKET_IN_FLOAT(volume_mix_weight, "VolumeMixWeight", 0.0f, SocketType::SVM_INTERNAL);
+
+  static NodeEnum density_enum;
+  density_enum.insert("Density-Global", NODE_VOLUME_DENSITY_GLOBAL);
+  density_enum.insert("Density-Channel", NODE_VOLUME_DENSITY_CHANNEL);
+  SOCKET_ENUM(density_mode, "Density Mode", density_enum, NODE_VOLUME_DENSITY_GLOBAL);
 
   SOCKET_OUT_CLOSURE(volume, "Volume");
 
@@ -3169,6 +3178,7 @@ AbsorptionVolumeNode::AbsorptionVolumeNode() : VolumeNode(get_node_type())
 void AbsorptionVolumeNode::compile(SVMCompiler &compiler)
 {
   VolumeNode::compile(compiler, input("Density"), NULL);
+  compiler.add_node(density_mode);
 }
 
 void AbsorptionVolumeNode::compile(OSLCompiler &compiler)
@@ -3195,8 +3205,8 @@ NODE_DEFINE(ScatterVolumeNode)
   SOCKET_ENUM(phase, "Phase", phase_enum, CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
 
   static NodeEnum density_enum;
-  phase_enum.insert("Density-Global", NODE_VOLUME_DENSITY_GLOBAL);
-  phase_enum.insert("Density-Channel", NODE_VOLUME_DENSITY_CHANNEL);
+  density_enum.insert("Density-Global", NODE_VOLUME_DENSITY_GLOBAL);
+  density_enum.insert("Density-Channel", NODE_VOLUME_DENSITY_CHANNEL);
   SOCKET_ENUM(density_mode, "Density Mode", density_enum, NODE_VOLUME_DENSITY_GLOBAL);
 
   SOCKET_IN_FLOAT(volume_mix_weight, "VolumeMixWeight", 0.0f, SocketType::SVM_INTERNAL);
@@ -3213,34 +3223,14 @@ ScatterVolumeNode::ScatterVolumeNode() : VolumeNode(get_node_type())
 
 void ScatterVolumeNode::compile(SVMCompiler &compiler)
 {
-  ShaderInput *color_in = input("Color");
-  ShaderInput *densities_in = input("Densities");
-  ShaderInput *coeffs_in = density_mode == NODE_VOLUME_DENSITY_GLOBAL ? color_in : densities_in;
-
-  if (coeffs_in->link) {
-    compiler.add_node(NODE_CLOSURE_WEIGHT, compiler.stack_assign(coeffs_in));
-  }
-  else {
-    compiler.add_node(NODE_CLOSURE_SET_WEIGHT, NODE_VOLUME_DENSITY_GLOBAL ? color : densities);
-  }
-
-  ShaderInput *density_in = input("Density");
-  ShaderInput *anisotropy_in = input("Anisotropy");
   ShaderInput *ior_in = input("IoR");
   ShaderInput *b_in = input("B");
+  VolumeNode::compile(compiler, input("Density"), input("Anisotropy"));
 
-  compiler.add_node(
-      NODE_CLOSURE_VOLUME,
-      compiler.encode_uchar4(closure,
-                             compiler.stack_assign(density_in),
-                             compiler.stack_assign(anisotropy_in),
-                             compiler.closure_mix_weight_offset()),
-      __float_as_int((density_in) ? get_float(density_in->socket_type) : 0.0f),
-      __float_as_int((anisotropy_in) ? get_float(anisotropy_in->socket_type) : 0.0f));
-  compiler.add_node(phase,
+  compiler.add_node(density_mode,
+                    phase,
                     __float_as_int(get_float(ior_in->socket_type)),
-                    __float_as_int(get_float(b_in->socket_type)),
-                    density_mode);
+                    __float_as_int(get_float(b_in->socket_type)));
 
   if (phase == CLOSURE_VOLUME_FOURNIER_FORAND_ID) {
     create_fournier_forand_cdf_table(get_float(ior_in->socket_type), get_float(b_in->socket_type));

@@ -884,6 +884,7 @@ ccl_device_noinline int svm_node_closure_volume(KernelGlobals kg,
   if (shader_type != SHADER_TYPE_VOLUME) {
     return offset;
   }
+  uint4 atr_node = read_node(kg, &offset);
 
   uint type, density_offset, anisotropy_offset;
 
@@ -895,27 +896,21 @@ ccl_device_noinline int svm_node_closure_volume(KernelGlobals kg,
     return offset;
   }
 
-  float density = (stack_valid(density_offset)) ? stack_load_float(stack, density_offset) :
-                                                  __uint_as_float(node.z);
-  density = mix_weight * fmaxf(density, 0.0f);
-
   /* Compute scattering coefficient. */
   Spectrum weight = closure_weight;
 
-  if (type == CLOSURE_VOLUME_ABSORPTION_ID) {
-    weight = one_spectrum() - weight;
+  if (atr_node.x == NODE_VOLUME_DENSITY_GLOBAL) {
+    float density = (stack_valid(density_offset)) ? stack_load_float(stack, density_offset) :
+                                                    __uint_as_float(node.z);
+    density = mix_weight * fmaxf(density, 0.0f);
+    if (type == CLOSURE_VOLUME_ABSORPTION_ID) {
+      weight = one_spectrum() - weight;
+    }
+    weight *= density;
   }
-
-  weight *= density;
 
   /* Add closure for volume scattering. */
   if (type == CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID) {
-    uint4 ff_node = read_node(kg, &offset);
-
-    if (ff_node.w == NODE_VOLUME_DENSITY_CHANNEL) {
-      weight = closure_weight;
-    }
-
     ccl_private ScatteringVolume *volume = (ccl_private ScatteringVolume *)bsdf_alloc(
         sd, sizeof(ScatteringVolume), weight);
 
@@ -923,9 +918,9 @@ ccl_device_noinline int svm_node_closure_volume(KernelGlobals kg,
       float anisotropy = (stack_valid(anisotropy_offset)) ?
                              stack_load_float(stack, anisotropy_offset) :
                              __uint_as_float(node.w);
-      uint phase = ff_node.x;
-      float IoR = __uint_as_float(ff_node.y);
-      float B = __uint_as_float(ff_node.z);
+      uint phase = atr_node.y;
+      float IoR = __uint_as_float(atr_node.z);
+      float B = __uint_as_float(atr_node.w);
 
       volume->g = anisotropy; /* g */
       volume->IoR = IoR;      /* IoR */

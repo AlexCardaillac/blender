@@ -457,6 +457,11 @@ static void node_shader_buts_scatter(uiLayout *layout, bContext * /*C*/, Pointer
   uiItemR(layout, ptr, "density_mode", DEFAULT_FLAGS, "", ICON_NONE);
 }
 
+static void node_shader_buts_absorption(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
+{
+  uiItemR(layout, ptr, "density_mode", DEFAULT_FLAGS, "", ICON_NONE);
+}
+
 static void node_shader_buts_glossy(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
   uiItemR(layout, ptr, "distribution", DEFAULT_FLAGS, "", ICON_NONE);
@@ -513,6 +518,9 @@ static void node_shader_set_butfunc(bNodeType *ntype)
     case SH_NODE_DISPLACEMENT:
     case SH_NODE_VECTOR_DISPLACEMENT:
       ntype->draw_buttons = node_shader_buts_displacement;
+      break;
+    case SH_NODE_VOLUME_ABSORPTION:
+      ntype->draw_buttons = node_shader_buts_absorption;
       break;
     case SH_NODE_VOLUME_SCATTER:
       ntype->draw_buttons = node_shader_buts_scatter;
