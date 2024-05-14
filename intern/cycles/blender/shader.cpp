@@ -702,6 +702,14 @@ static ShaderNode *add_node(Scene *scene,
         scatter->set_phase(CLOSURE_VOLUME_FOURNIER_FORAND_ID);
         break;
     }
+    switch (b_scatter_node.density_mode()) {
+      case BL::ShaderNodeVolumeScatter::density_mode_DENSITY_GLOBAL:
+        scatter->set_density_mode(NODE_VOLUME_DENSITY_GLOBAL);
+        break;
+      case BL::ShaderNodeVolumeScatter::density_mode_DENSITY_CHANNEL:
+        scatter->set_density_mode(NODE_VOLUME_DENSITY_CHANNEL);
+        break;
+    }
     node = scatter;
   }
   else if (b_node.is_a(&RNA_ShaderNodeVolumeAbsorption)) {

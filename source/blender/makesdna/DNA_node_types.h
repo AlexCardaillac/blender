@@ -2646,6 +2646,12 @@ enum {
   SHD_PHASE_FOURNIER_FORAND = 1,
 };
 
+/* Volume density mode */
+enum {
+  SHD_DENSITY_GLOBAL = 0,
+  SHD_DENSITY_CHANNEL = 1,
+};
+
 /* Output shader node */
 
 typedef enum NodeShaderOutputTarget {

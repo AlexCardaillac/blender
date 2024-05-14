@@ -912,6 +912,10 @@ ccl_device_noinline int svm_node_closure_volume(KernelGlobals kg,
   if (type == CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID) {
     uint4 ff_node = read_node(kg, &offset);
 
+    if (ff_node.w == NODE_VOLUME_DENSITY_CHANNEL) {
+      weight = closure_weight;
+    }
+
     ccl_private ScatteringVolume *volume = (ccl_private ScatteringVolume *)bsdf_alloc(
         sd, sizeof(ScatteringVolume), weight);
 

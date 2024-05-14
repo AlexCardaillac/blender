@@ -409,6 +409,11 @@ typedef enum NodeCombSepColorType {
   NODE_COMBSEP_COLOR_HSL,
 } NodeCombSepColorType;
 
+typedef enum NodeVolumeDensityMode {
+  NODE_VOLUME_DENSITY_GLOBAL,
+  NODE_VOLUME_DENSITY_CHANNEL,
+} NodeVolumeDensityMode;
+
 /* Closure */
 
 typedef enum ClosureType {

@@ -17,8 +17,14 @@ static void node_declare(NodeDeclarationBuilder &b)
 {
   b.add_input<decl::Color>("Color").default_value({0.8f, 0.8f, 0.8f, 1.0f});
 #define SOCK_COLOR_ID 0
-  b.add_input<decl::Float>("Density").default_value(1.0f).min(0.0f).max(1000.0f);
+  b.add_input<decl::Float>("Density").default_value(1.0f).min(0.0f).max(1000.0f).subtype(
+      PROP_FACTOR);
 #define SOCK_DENSITY_ID 1
+  b.add_input<decl::Vector>("Densities")
+      .default_value({1.0f, 1.0f, 1.0f})
+      .min(0.0f)
+      .max(1000.0f)
+      .subtype(PROP_FACTOR);
   b.add_input<decl::Float>("Anisotropy")
       .default_value(0.0f)
       .min(-1.0f)
@@ -33,23 +39,35 @@ static void node_declare(NodeDeclarationBuilder &b)
 static void node_shader_buts_scatter(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
   uiItemR(layout, ptr, "phase", UI_ITEM_R_SPLIT_EMPTY_NAME, "", ICON_NONE);
+  uiItemR(layout, ptr, "density_mode", UI_ITEM_R_SPLIT_EMPTY_NAME, "", ICON_NONE);
 }
 
 static void node_shader_init_scatter(bNodeTree * /*ntree*/, bNode *node)
 {
   node->custom1 = SHD_PHASE_HENYEY_GREENSTEIN;
+  node->custom2 = SHD_DENSITY_GLOBAL;
 }
 
 static void node_shader_update_scatter(bNodeTree *ntree, bNode *node)
 {
   const int phase_function = node->custom1;
+  const int density_mode = node->custom2;
 
   LISTBASE_FOREACH (bNodeSocket *, sock, &node->inputs) {
     if (STR_ELEM(sock->name, "IoR", "B")) {
       bke::nodeSetSocketAvailability(ntree, sock, phase_function == SHD_PHASE_FOURNIER_FORAND);
     }
-    if (STR_ELEM(sock->name, "Anisotropy")) {
+    else if (STR_ELEM(sock->name, "Anisotropy")) {
       bke::nodeSetSocketAvailability(ntree, sock, phase_function == SHD_PHASE_HENYEY_GREENSTEIN);
+    }
+    else if (STR_ELEM(sock->name, "Density")) {
+      bke::nodeSetSocketAvailability(ntree, sock, density_mode == SHD_DENSITY_GLOBAL);
+    }
+    else if (STR_ELEM(sock->name, "Color")) {
+      bke::nodeSetSocketAvailability(ntree, sock, density_mode == SHD_DENSITY_GLOBAL);
+    }
+    else if (STR_ELEM(sock->name, "Densities")) {
+      bke::nodeSetSocketAvailability(ntree, sock, density_mode == SHD_DENSITY_CHANNEL);
     }
   }
 }

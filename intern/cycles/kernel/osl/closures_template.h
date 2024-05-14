@@ -207,6 +207,7 @@ OSL_CLOSURE_STRUCT_BEGIN(VolumeHenyeyGreenstein, henyey_greenstein)
   OSL_CLOSURE_STRUCT_MEMBER(VolumeHenyeyGreenstein, FLOAT, float, IoR, NULL)
   OSL_CLOSURE_STRUCT_MEMBER(VolumeHenyeyGreenstein, FLOAT, float, B, NULL)
   OSL_CLOSURE_STRUCT_MEMBER(VolumeHenyeyGreenstein, INT, int, phase, NULL)
+  OSL_CLOSURE_STRUCT_MEMBER(VolumeHenyeyGreenstein, INT, int, density_mode, NULL)
 OSL_CLOSURE_STRUCT_END(VolumeHenyeyGreenstein, henyey_greenstein)
 
 #undef OSL_CLOSURE_STRUCT_BEGIN

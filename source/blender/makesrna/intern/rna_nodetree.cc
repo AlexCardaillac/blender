@@ -4270,6 +4270,20 @@ static const EnumPropertyItem prop_image_extension[] = {
     {0, nullptr, 0, nullptr, nullptr},
 };
 
+static const EnumPropertyItem node_volume_density_items[] = {
+    {SHD_DENSITY_GLOBAL,
+     "DENSITY_GLOBAL",
+     0,
+     "Global",
+     "Use a single value for density with color coefficients"},
+    {SHD_DENSITY_CHANNEL,
+     "DENSITY_CHANNEL",
+     0,
+     "Channel-Wise",
+     "Use a density coefficient per color channel, with base color coefficient of 0.0"},
+    {0, nullptr, 0, nullptr, nullptr},
+};
+
 static const EnumPropertyItem node_scatter_phase_items[] = {
     {SHD_PHASE_HENYEY_GREENSTEIN,
      "HENYEY_GREENSTEIN",
@@ -5612,6 +5626,12 @@ static void def_scatter(StructRNA *srna)
   RNA_def_property_enum_sdna(prop, nullptr, "custom1");
   RNA_def_property_enum_items(prop, node_scatter_phase_items);
   RNA_def_property_ui_text(prop, "Phase", "Phase function for the scattered light");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+
+  prop = RNA_def_property(srna, "density_mode", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, nullptr, "custom2");
+  RNA_def_property_enum_items(prop, node_volume_density_items);
+  RNA_def_property_ui_text(prop, "Density Mode", "Density mode for the light attenuation");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
 }
 

@@ -454,6 +454,7 @@ static void node_shader_buts_displacement(uiLayout *layout, bContext * /*C*/, Po
 static void node_shader_buts_scatter(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
   uiItemR(layout, ptr, "phase", DEFAULT_FLAGS, "", ICON_NONE);
+  uiItemR(layout, ptr, "density_mode", DEFAULT_FLAGS, "", ICON_NONE);
 }
 
 static void node_shader_buts_glossy(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)

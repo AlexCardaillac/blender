@@ -751,6 +751,7 @@ class VolumeNode : public ShaderNode {
   }
 
   NODE_SOCKET_API(float3, color)
+  NODE_SOCKET_API(float3, densities)
   NODE_SOCKET_API(float, density)
   NODE_SOCKET_API(float, volume_mix_weight)
 
@@ -778,6 +779,7 @@ class ScatterVolumeNode : public VolumeNode {
   NODE_SOCKET_API(float, IoR)
   NODE_SOCKET_API(float, B)
   NODE_SOCKET_API(ClosureType, phase)
+  NODE_SOCKET_API(NodeVolumeDensityMode, density_mode)
 };
 
 class PrincipledVolumeNode : public VolumeNode {
