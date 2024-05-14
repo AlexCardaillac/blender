@@ -134,11 +134,11 @@ ccl_device Spectrum volume_phase_eval(ccl_private const ShaderData *sd,
   float cos_theta;
 
   switch (svc->phase) {
-    case CLOSURE_VOLUME_FOURNIER_FORAND_ID:
+    case NODE_VOLUME_FOURNIER_FORAND:
       cos_theta = acosf(dot(-sd->wi, wo));
       *pdf = single_peaked_fournier_forand(cos_theta, svc->IoR, svc->B);
       break;
-    default:  // CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID
+    default:  // NODE_VOLUME_HENYEY_GREENSTEIN
       float g = svc->g;
 
       if (fabsf(g) < 1e-3f) {
@@ -162,10 +162,10 @@ ccl_device int volume_phase_sample(ccl_private const ShaderData *sd,
 {
   /* note that wi points towards the viewer and so is used negated */
   switch (svc->phase) {
-    case CLOSURE_VOLUME_FOURNIER_FORAND_ID:
+    case NODE_VOLUME_FOURNIER_FORAND:
       *wo = fournier_forand_sample(-sd->wi, svc->B, svc->IoR, rand, pdf);
       break;
-    default:  // CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID
+    default:  // NODE_VOLUME_HENYEY_GREENSTEIN
       *wo = henyey_greenstein_sample(-sd->wi, svc->g, rand, pdf);
       break;
   }
@@ -175,14 +175,14 @@ ccl_device int volume_phase_sample(ccl_private const ShaderData *sd,
 
 ccl_device int volume_phase_setup(ccl_private ScatteringVolume *volume)
 {
-  volume->type = CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID;
+  volume->type = CLOSURE_VOLUME_SCATTERING_ID;
 
   switch (volume->phase) {
-    case CLOSURE_VOLUME_FOURNIER_FORAND_ID:
+    case NODE_VOLUME_FOURNIER_FORAND:
       /* clamp backscatter fraction to avoid delta function */
       volume->B = min(fabsf(volume->B), 0.5f - 1e-3f);
       break;
-    default:  // CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID
+    default:  // NODE_VOLUME_HENYEY_GREENSTEIN
       /* clamp anisotropy to avoid delta function */
       volume->g = signf(volume->g) * min(fabsf(volume->g), 1.0f - 1e-3f);
       break;

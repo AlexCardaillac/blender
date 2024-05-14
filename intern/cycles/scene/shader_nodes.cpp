@@ -3112,7 +3112,7 @@ void AmbientOcclusionNode::compile(OSLCompiler &compiler)
 
 VolumeNode::VolumeNode(const NodeType *node_type) : ShaderNode(node_type)
 {
-  closure = CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID;
+  closure = CLOSURE_VOLUME_SCATTERING_ID;
 }
 
 void VolumeNode::compile(SVMCompiler &compiler, ShaderInput *param1, ShaderInput *param2)
@@ -3200,9 +3200,9 @@ NODE_DEFINE(ScatterVolumeNode)
   SOCKET_IN_FLOAT(B, "B", 0.1f);
 
   static NodeEnum phase_enum;
-  phase_enum.insert("Henyey-Greenstein", CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
-  phase_enum.insert("Fournier-Forand", CLOSURE_VOLUME_FOURNIER_FORAND_ID);
-  SOCKET_ENUM(phase, "Phase", phase_enum, CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
+  phase_enum.insert("Henyey-Greenstein", NODE_VOLUME_HENYEY_GREENSTEIN);
+  phase_enum.insert("Fournier-Forand", NODE_VOLUME_FOURNIER_FORAND);
+  SOCKET_ENUM(phase, "Phase", phase_enum, NODE_VOLUME_HENYEY_GREENSTEIN);
 
   static NodeEnum density_enum;
   density_enum.insert("Density-Global", NODE_VOLUME_DENSITY_GLOBAL);
@@ -3218,7 +3218,7 @@ NODE_DEFINE(ScatterVolumeNode)
 
 ScatterVolumeNode::ScatterVolumeNode() : VolumeNode(get_node_type())
 {
-  closure = CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID;
+  closure = CLOSURE_VOLUME_SCATTERING_ID;
 }
 
 void ScatterVolumeNode::compile(SVMCompiler &compiler)
@@ -3232,7 +3232,7 @@ void ScatterVolumeNode::compile(SVMCompiler &compiler)
                     __float_as_int(get_float(ior_in->socket_type)),
                     __float_as_int(get_float(b_in->socket_type)));
 
-  if (phase == CLOSURE_VOLUME_FOURNIER_FORAND_ID) {
+  if (phase == NODE_VOLUME_FOURNIER_FORAND) {
     create_fournier_forand_cdf_table(get_float(ior_in->socket_type), get_float(b_in->socket_type));
   }
 }
@@ -3270,7 +3270,7 @@ NODE_DEFINE(PrincipledVolumeNode)
 
 PrincipledVolumeNode::PrincipledVolumeNode() : VolumeNode(get_node_type())
 {
-  closure = CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID;
+  closure = CLOSURE_VOLUME_SCATTERING_ID;
   density_attribute = ustring("density");
   temperature_attribute = ustring("temperature");
 }

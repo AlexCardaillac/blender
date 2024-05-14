@@ -910,7 +910,7 @@ ccl_device_noinline int svm_node_closure_volume(KernelGlobals kg,
   }
 
   /* Add closure for volume scattering. */
-  if (type == CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID) {
+  if (type == CLOSURE_VOLUME_SCATTERING_ID) {
     ccl_private ScatteringVolume *volume = (ccl_private ScatteringVolume *)bsdf_alloc(
         sd, sizeof(ScatteringVolume), weight);
 

@@ -696,10 +696,10 @@ static ShaderNode *add_node(Scene *scene,
     ScatterVolumeNode *scatter = graph->create_node<ScatterVolumeNode>();
     switch (b_scatter_node.phase()) {
       case BL::ShaderNodeVolumeScatter::phase_HENYEY_GREENSTEIN:
-        scatter->set_phase(CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID);
+        scatter->set_phase(NODE_VOLUME_HENYEY_GREENSTEIN);
         break;
       case BL::ShaderNodeVolumeScatter::phase_FOURNIER_FORAND:
-        scatter->set_phase(CLOSURE_VOLUME_FOURNIER_FORAND_ID);
+        scatter->set_phase(NODE_VOLUME_FOURNIER_FORAND);
         break;
     }
     switch (b_scatter_node.density_mode()) {

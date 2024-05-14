@@ -30,7 +30,7 @@ ccl_device_inline void volume_shader_merge_closures(ccl_private ShaderData *sd)
   for (int i = 0; i < sd->num_closure; i++) {
     ccl_private ShaderClosure *sci = &sd->closure[i];
 
-    if (sci->type != CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID) {
+    if (sci->type != CLOSURE_VOLUME_SCATTERING_ID) {
       continue;
     }
 
@@ -73,7 +73,7 @@ ccl_device_inline void volume_shader_copy_phases(ccl_private ShaderVolumePhases 
     ccl_private const ShaderClosure *from_sc = &sd->closure[i];
     ccl_private const ScatteringVolume *from_hg = (ccl_private const ScatteringVolume *)from_sc;
 
-    if (from_sc->type == CLOSURE_VOLUME_HENYEY_GREENSTEIN_ID) {
+    if (from_sc->type == CLOSURE_VOLUME_SCATTERING_ID) {
       ccl_private ShaderVolumeClosure *to_sc = &phases->closure[phases->num_closure];
 
       to_sc->weight = from_sc->weight;
