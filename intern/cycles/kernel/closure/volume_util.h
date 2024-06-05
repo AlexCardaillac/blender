@@ -33,7 +33,7 @@ ccl_device float logistic_norm_fn(float theta, float B)
 
 ccl_device float fournier_forand_sigma(float n, float sin_theta_2)
 {
-  float u = 4.0f * sqr(sin_theta_2 * sin_theta_2);
+  float u = 4.0f * sqr(sin_theta_2);
   return u / (3.0f * sqr(n - 1.0f));
 };
 
@@ -77,7 +77,7 @@ ccl_device uint create_fournier_forand_cdf_table(float n, float b)
   ff_cdf[0][1] = 0.0f;
   ff_cdf[0][1] = fournier_forand_cdf(0.0f, IoR, B);
   uint i = 1;
-  while (theta < 180.0f && i < CDF_RESOLUTION) {
+  while (theta <= 180.0f && i < CDF_RESOLUTION) {
     ff_cdf[i][0] = DEG2RADF(theta);
     ff_cdf[i][1] = fournier_forand_cdf(DEG2RADF(theta), IoR, B);
     step = (logistic_fn(theta, B) - l0) / norm;
