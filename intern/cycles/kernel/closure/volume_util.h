@@ -6,30 +6,11 @@
 
 CCL_NAMESPACE_BEGIN
 
+#define RAD2DEGF(_rad) ((_rad) * (float)(180.0 / M_PI))
 #define DEG2RADF(_deg) ((_deg) * (float)(M_PI / 180.0))
 #define ANGLE_EPSILON 1e-6f
-#define CDF_RESOLUTION 4000
-#define STEP_MIN 1e-6f
-
-typedef float CDFTable[CDF_RESOLUTION][2];
-
-ccl_device CDFTable &get_fournier_forand_cdf_table()
-{
-  static CDFTable ff_cdf = {0.0};
-  return ff_cdf;
-}
-
-ccl_device float logistic_fn(float theta, float B)
-{
-  return 1.0f / (1.0f + expf(-0.04f * (0.5f - B) * (theta - 90.0f)));
-}
-
-ccl_device float logistic_norm_fn(float theta, float B)
-{
-  float y = logistic_fn(theta, B) - logistic_fn(0.0f, B);
-  y /= logistic_fn(180.0f, B) - logistic_fn(0.0f, B);
-  return y;
-}
+#define ANGLE_TOL 1.0f / 180.0f
+#define CDF_TOL 0.01f
 
 ccl_device float fournier_forand_sigma(float n, float sin_theta_2)
 {
@@ -39,8 +20,11 @@ ccl_device float fournier_forand_sigma(float n, float sin_theta_2)
 
 ccl_device float fournier_forand_cdf(float theta, float n, float B)
 {
-  if (theta == 0.0f) {
-    theta = ANGLE_EPSILON;
+  if (theta <= 0.0f) {
+    return 0.0f;
+  }
+  else if (theta >= M_PI_F) {
+    return 1.0f;
   }
   float s90 = fournier_forand_sigma(n, sinf(M_PI_2_F / 2.0f));
   float s180 = fournier_forand_sigma(n, sinf(M_PI_F / 2.0f));
@@ -57,66 +41,53 @@ ccl_device float fournier_forand_cdf(float theta, float n, float B)
   return cdf;
 }
 
-ccl_device uint create_fournier_forand_cdf_table(float n, float b)
-{
-  static float IoR = -1.0f;
-  static float B = -1.0f;
-
-  if (b == B && n == IoR) {
-    return 0;
-  }
-  B = b;
-  IoR = n;
-  CDFTable &ff_cdf = get_fournier_forand_cdf_table();
-
-  float l0 = logistic_fn(0.0f, B);
-  float norm = logistic_fn(180.0f, B) - l0;
-
-  float step = STEP_MIN;
-  float theta = step;
-  ff_cdf[0][1] = 0.0f;
-  ff_cdf[0][1] = fournier_forand_cdf(0.0f, IoR, B);
-  uint i = 1;
-  while (theta <= 180.0f && i < CDF_RESOLUTION) {
-    ff_cdf[i][0] = DEG2RADF(theta);
-    ff_cdf[i][1] = fournier_forand_cdf(DEG2RADF(theta), IoR, B);
-    step = (logistic_fn(theta, B) - l0) / norm;
-    if (step < STEP_MIN) {
-      step = STEP_MIN;
-    }
-    theta += step;
-    i += 1;
-  }
-  if (i < CDF_RESOLUTION) {
-    ff_cdf[i][0] = theta;
-    ff_cdf[i][1] = 0.0f;
-  }
-  return i;
-}
-
 ccl_device float interpolate_linear(float ax, float ay, float bx, float by, float x)
 {
   return ay + (by - ay) * ((x - ax) / (bx - ax));
 }
 
-ccl_device float find_fournier_forand_angle(float rand)
+ccl_device float find_fournier_forand_angle(float rand, float B, float n)
 {
-  CDFTable &ff_cdf = get_fournier_forand_cdf_table();
-  uint i = 0;
-  while (i < CDF_RESOLUTION and ff_cdf[i][1] <= rand) {
-    i += 1;
+  int it = 0;
+  float l_low, l_up, m = 0.0f;
+  float theta = 0.8726646259971648f;  // 50 degrees
+  float fm = fournier_forand_cdf(theta, n, B);
+  float err = fm - rand;
+  if (err < 0.0f) {
+    l_low = theta;
+    l_up = M_PI_F;
   }
-  if (i == CDF_RESOLUTION) {
-    return ff_cdf[CDF_RESOLUTION - 1][0];
+  else if (err > 0.0f) {
+    l_low = 0.0f;
+    l_up = theta;
   }
-  else if (rand == ff_cdf[i][1]) {
-    return ff_cdf[i][0];
+  else {
+    return theta;
   }
-  else if (rand < ff_cdf[i][1]) {
-    return interpolate_linear(
-        ff_cdf[i][1], ff_cdf[i][0], ff_cdf[i + 1][1], ff_cdf[i + 1][0], rand);
+
+  while (it < 100 && (fabsf(l_low - l_up) > ANGLE_TOL || fabsf(err) > CDF_TOL)) {
+    m = (l_low + l_up) / 2.0f;
+    fm = fournier_forand_cdf(m, n, B);
+    err = fm - rand;
+    it += 1;
+
+    if (signf(fournier_forand_cdf(l_low, n, B) - rand) == signf(err)) {
+      l_low = m;
+    }
+    else if (signf(fournier_forand_cdf(l_up, n, B) - rand) == signf(err)) {
+      l_up = m;
+    }
   }
-  return 0.0;
+  m = (l_low + l_up) / 2.0f;
+  fm = fournier_forand_cdf(m, n, B);
+  err = fm - rand;
+  if (err < 0.0f) {
+    return interpolate_linear(fm, m, fournier_forand_cdf(l_up, n, B), l_up, rand);
+  }
+  else if (err > 0.0f) {
+    return interpolate_linear(fournier_forand_cdf(l_low, n, B), l_low, fm, m, rand);
+  }
+  return m;
 }
 
 CCL_NAMESPACE_END

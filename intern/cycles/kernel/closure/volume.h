@@ -5,7 +5,6 @@
 #pragma once
 
 #include "kernel/closure/volume_util.h"
-#include "util/array.h"
 
 CCL_NAMESPACE_BEGIN
 
@@ -65,7 +64,7 @@ ccl_device float single_peaked_fournier_forand(float theta, float n, float B)
 ccl_device float3
 fournier_forand_sample(float3 D, float b, float IoR, float2 rand, ccl_private float *pdf)
 {
-  float theta = find_fournier_forand_angle(rand.x);
+  float theta = find_fournier_forand_angle(rand.x, b, IoR);
   if (pdf) {
     *pdf = single_peaked_fournier_forand(theta, IoR, b);
   }

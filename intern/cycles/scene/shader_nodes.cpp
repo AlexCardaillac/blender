@@ -3231,10 +3231,6 @@ void ScatterVolumeNode::compile(SVMCompiler &compiler)
                     phase,
                     __float_as_int(get_float(ior_in->socket_type)),
                     __float_as_int(get_float(b_in->socket_type)));
-
-  if (phase == NODE_VOLUME_FOURNIER_FORAND) {
-    create_fournier_forand_cdf_table(get_float(ior_in->socket_type), get_float(b_in->socket_type));
-  }
 }
 
 void ScatterVolumeNode::compile(OSLCompiler &compiler)
